@@ -1,0 +1,12 @@
+{
+  "name": "Cricket",
+  "displayName": "Cricket",
+  "expo": {
+    "name": "Cricket",
+    "slug": "Cricket",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
