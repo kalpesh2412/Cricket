@@ -12,7 +12,7 @@ import ImagePicker from "react-native-image-crop-picker";
 import firebase from "../../../firebase";
 import { Snackbar, TextInput } from "react-native-paper";
 
-export default class NewTeam extends Component {
+class NewTeam extends Component {
   constructor(props) {
     super(props);
     let imgUrl = props.image
@@ -23,6 +23,9 @@ export default class NewTeam extends Component {
       teamName: "",
       teamCity: "",
       image: null,
+      team: this.props.teamName,
+      teamIdCreated: "",
+      matchId: this.props.matchid,
       isVisible: false,
       defaultTeamLogo: imgUrl,
       teamLogo: "",
@@ -67,32 +70,37 @@ export default class NewTeam extends Component {
         message: "Please Enter Team City!!",
       });
     } else {
-      const ref = firebase
-        .firestore()
-        .collection("users")
-        .doc(this.state.uid)
-        .collection("match")
-        .doc();
+      // const ref = firebase
+      //   .firestore()
+      //   .collection("teamdata")
+      //   .doc(this.state.matchId)
+      //   .collection(this.state.team)
+      //   .doc();
 
-      ref
-        .set({
-          TeamLogo: this.state.teamLogo,
-          TeamName: this.state.teamName,
-          TeamCity: this.state.teamCity,
-        })
-        .then(() => {
-          this.setState({
-            teamLogo: "",
-            teamName: "",
-            teamCity: "",
-            visible: true,
-            message: "Team Created Successfully!!",
-          });
-          console.log("Ye ID hai", ref.id);
-        })
-        .catch((err) => {
-          console.error("Error found: ", err);
-        });
+      // ref
+      //   .set({
+      //     TeamLogo: this.state.teamLogo,
+      //     TeamName: this.state.teamName,
+      //     TeamCity: this.state.teamCity,
+      //   })
+      //   .then(() => {
+      //     this.setState(
+      //       {
+      //         teamLogo: "",
+      //         teamName: "",
+      //         teamCity: "",
+      //         visible: true,
+      //         message: "Team Created Successfully!!",
+      //       },
+      //       () => {
+      //         console.log("Nothing!!");
+      //       }
+      //     );
+      this.props.navigation.jumpTo("MyStack", { screen: "NewPlayer" });
+      // })
+      // .catch((err) => {
+      //   console.error("Error found: ", err);
+      // });
     }
   };
 
@@ -143,10 +151,7 @@ export default class NewTeam extends Component {
           onChangeText={(val) => this.handleString(val, "teamCity")}
         />
         <View style={{ flex: 1, justifyContent: "flex-end", width: "100%" }}>
-          <TouchableOpacity
-            style={styles.btnAddTeam}
-            onPress={() => this.addTeam()}
-          >
+          <TouchableOpacity style={styles.btnAddTeam} onPress={this.addTeam}>
             <Text style={{ fontWeight: "bold", color: "white", fontSize: 14 }}>
               ADD TEAM
             </Text>
@@ -203,3 +208,5 @@ const styles = StyleSheet.create({
     color: "grey",
   },
 });
+
+export default NewTeam;

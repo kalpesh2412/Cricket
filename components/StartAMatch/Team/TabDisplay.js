@@ -6,7 +6,10 @@ import NewTeam from "./NewTeam";
 
 const Tab = createMaterialTopTabNavigator();
 
-export default function TabDisplay() {
+export default function TabDisplay({ navigation, route }) {
+  var id = route.params.id;
+  var team = route.params.team == "first" ? route.params.team : "second";
+  console.log("IDDD", id, "TEAMM", team);
   return (
     <Tab.Navigator
       tabBarOptions={{
@@ -17,8 +20,13 @@ export default function TabDisplay() {
         style: { backgroundColor: "#FFD600" },
       }}
     >
+      <Tab.Screen
+        name="Create New Team"
+        children={() => (
+          <NewTeam matchid={id} teamName={team} navigation={navigation} />
+        )}
+      />
       <Tab.Screen name="My Teams" component={MyTeam} />
-      <Tab.Screen name="Create New Team" component={NewTeam} />
       <Tab.Screen name="Add Player" component={AddPlayer} />
     </Tab.Navigator>
   );

@@ -12,11 +12,11 @@ export default class Dashboard extends Component {
     this.state = {
       displayName: firebase.auth().currentUser.displayName,
       uid: firebase.auth().currentUser.uid,
-      firstTeam: "+",
-      secondTeam: "+",
+      firstTeam: "first",
+      secondTeam: "second",
       firstTeamSquad: "",
       secondTeamSquad: "",
-      matchId: "",
+      matchId: this.props.route.params.id,
     };
   }
 
@@ -38,7 +38,12 @@ export default class Dashboard extends Component {
         />
         <TouchableOpacity
           style={styles.roundButton}
-          onPress={() => this.props.navigation.navigate("TabDisplay")}
+          onPress={() =>
+            this.props.navigation.navigate("TabDisplay", {
+              id: this.state.matchId,
+              team: this.state.firstTeam,
+            })
+          }
         >
           {this.state.firstTeam == "" ? (
             <Text style={{ fontWeight: "bold", color: "white", fontSize: 30 }}>
@@ -61,7 +66,12 @@ export default class Dashboard extends Component {
         <View style={styles.space} />
         <TouchableOpacity
           style={styles.roundButton}
-          onPress={() => this.props.navigation.navigate("TabDisplay")}
+          onPress={() =>
+            this.props.navigation.navigate("TabDisplay", {
+              id: this.state.matchId,
+              team: this.state.secondTeam,
+            })
+          }
         >
           {this.state.secondTeam == "" ? (
             <Text style={{ fontWeight: "bold", color: "white", fontSize: 30 }}>
@@ -129,7 +139,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 100,
-    backgroundColor: "white",
+    backgroundColor: "navy",
     elevation: 10,
   },
 });

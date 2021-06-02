@@ -23,7 +23,7 @@ export default class Home extends Component {
       .doc();
     const matchId = ref.id;
     console.log("Match Id", matchId);
-    this.props.navigation.navigate("Dashboard");
+    this.props.navigation.navigate("Dashboard", { id: matchId });
   };
 
   render() {

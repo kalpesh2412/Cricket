@@ -16,12 +16,16 @@ export default class AddPlayer extends Component {
   _isMounted = false;
   constructor(props) {
     super(props);
+    let imgUrl = props.image
+      ? { uri: props.image }
+      : require("../../../assets/teamicon.jpg");
     this.state = {
       search: "",
       countPlayers: "",
       players: [],
       isSelected: null,
       playingSquad: 0,
+      defaultLogo: imgUrl,
     };
   }
 
@@ -29,48 +33,48 @@ export default class AddPlayer extends Component {
     this.setState({ search });
   };
 
-  // componentDidMount() {
-  //   this._isMounted = true;
-  //   firebase
-  //     .firestore()
-  //     .collection("Player")
-  //     .get()
-  //     .then((querySnapshot) => {
-  //       querySnapshot.forEach((snapshot) => {
-  //         var data = snapshot.data();
-  //         var newPlayer = this.state.players.concat(data);
-  //         if (this._isMounted) {
-  //           this.setState({ players: newPlayer });
-  //         }
-  //       });
-  //     })
-  //     .catch((error) => {
-  //       console.log("Error getting document:", error);
-  //     });
-  // }
+  componentDidMount() {
+    this._isMounted = true;
+    firebase
+      .firestore()
+      .collection("Player")
+      .get()
+      .then((querySnapshot) => {
+        querySnapshot.forEach((snapshot) => {
+          var data = snapshot.data();
+          var newPlayer = this.state.players.concat(data);
+          if (this._isMounted) {
+            this.setState({ players: newPlayer });
+          }
+        });
+      })
+      .catch((error) => {
+        console.log("Error getting document:", error);
+      });
+  }
 
   componentWillUnmount() {
     this._isMounted = false;
   }
 
-  removePlayer = () => {
-    firebase
-      .firestore()
-      .collection("Player")
-      .doc("A0xWdDomzYk7eueHj4hd")
-      .delete()
-      .then(() => {
-        console.log("Document successfully deleted!");
-      })
-      .catch((error) => {
-        console.error("Error removing document: ", error);
-      });
-  };
+  // removePlayer = () => {
+  //   firebase
+  //     .firestore()
+  //     .collection("Player")
+  //     .doc("A0xWdDomzYk7eueHj4hd")
+  //     .delete()
+  //     .then(() => {
+  //       console.log("Document successfully deleted!");
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error removing document: ", error);
+  //     });
+  // };
 
   onSelectItem = (id) => {
     let newArr = [...this.state.players];
     for (let data of newArr) {
-      if (data.PlayerDetails.playerContactNumber === id) {
+      if (data.Contact === id) {
         data.selected = data.selected == null ? true : !data.selected;
         break;
       }
@@ -94,18 +98,18 @@ export default class AddPlayer extends Component {
               },
               item.selected == true
                 ? {
-                    backgroundColor: "lightyellow",
+                    backgroundColor: "gold",
                   }
                 : {
                     backgroundColor: "white",
                   },
             ]}
-            onPress={() =>
-              this.onSelectItem(item.PlayerDetails.playerContactNumber)
-            }
+            onPress={() => this.onSelectItem(item.Contact)}
           >
             <Image
-              source={{ uri: item.PlayerDetails.playerImage }}
+              source={
+                item.Image == "" ? this.state.defaultLogo : { uri: item.Image }
+              }
               style={{
                 width: 50,
                 height: 50,
@@ -121,9 +125,9 @@ export default class AddPlayer extends Component {
                 color: "black",
               }}
             >
-              {item.PlayerDetails.playerName}
+              {item.Name}
             </Text>
-            <Icon
+            {/* <Icon
               name="remove"
               color="red"
               size={23}
@@ -134,7 +138,7 @@ export default class AddPlayer extends Component {
                 borderRadius: 100,
               }}
               onPress={() => this.removePlayer()}
-            />
+            /> */}
           </TouchableOpacity>
         </View>
       );

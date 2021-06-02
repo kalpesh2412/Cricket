@@ -8,6 +8,7 @@ import {
   FlatList,
   LogBox,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Avatar, Button, Icon } from "react-native-elements";
@@ -15,6 +16,7 @@ import Contacts from "react-native-unified-contacts";
 import ImagePicker from "react-native-image-crop-picker";
 import firebase from "../../../../firebase";
 import { Snackbar } from "react-native-paper";
+import { isMobileNumberValid, isStringValid } from "../../../Common/Validation";
 
 export default class NewPlayer extends Component {
   constructor(props) {
@@ -31,20 +33,20 @@ export default class NewPlayer extends Component {
           playerContactNumber: "",
         },
       ],
-      contactNo: "",
-      imageSrc: imgUrl,
-      visible: false,
-      message: "",
-      allow: false,
       playerInfo: [
         {
-          playerContactNumber: "9799172078",
+          playerContactNumber: "9636131836",
           playerImage: "",
           playerName: "Kalpesh",
         },
       ],
-      isLoading: false,
-      contactTextDisable: true,
+      cric_contact: "",
+      cric_name: "",
+      imageSrc: imgUrl,
+      visible: false,
+      message: "",
+      allow: false,
+      loading: [],
     };
     this.getPlayerImage = this.getPlayerImage.bind(this);
   }
@@ -52,9 +54,12 @@ export default class NewPlayer extends Component {
   componentDidMount() {
     LogBox.ignoreLogs(["VirtualizedLists should never be nested"]);
   }
+
   handleNameText(idx, e) {
     const newPlayerDetails = this.state.playerDetails.map((player, pidx) => {
-      if (idx !== pidx) return player;
+      if (idx !== pidx) {
+        return player;
+      }
       return { ...player, playerName: e };
     });
     this.setState({ playerDetails: newPlayerDetails });
@@ -65,28 +70,36 @@ export default class NewPlayer extends Component {
       if (idx !== pidx) return player;
       return { ...player, playerContactNumber: e };
     });
+
     this.setState({ playerDetails: newPlayerDetails });
   }
 
   handleDelete = (i) => {
-    let playerInfo = [...this.state.playerDetails];
-    playerInfo.splice(i, 1);
+    let playerData = [...this.state.playerDetails];
+    playerData.splice(i, 1);
     this.setState({
-      playerDetails: playerInfo,
-      isLoading: false,
+      playerDetails: playerData,
     });
   };
 
-  addplayer = () => {
+  removePlayer(i) {
+    let playerData = [...this.state.playerInfo];
+    playerData.splice(i, 1);
+    this.setState({
+      playerInfo: playerData,
+    });
+  }
+
+  addplayer() {
     this.setState((prevState) => ({
       playerDetails: [
         ...prevState.playerDetails,
         { playerImage: "", playerName: "", playerContactNumber: "" },
       ],
-      contactNo: "",
-      contactTextDisable: true,
+      cric_contact: "",
+      cric_name: "",
     }));
-  };
+  }
 
   addPlayerThroughContact() {
     this.setState((prevState) => ({
@@ -94,8 +107,8 @@ export default class NewPlayer extends Component {
         ...prevState.playerDetails,
         {
           playerImage: "",
-          playerName: "",
-          playerContactNumber: this.state.contactNo,
+          playerName: this.state.cric_name,
+          playerContactNumber: this.state.cric_contact,
         },
       ],
       contactTextDisable: false,
@@ -107,15 +120,16 @@ export default class NewPlayer extends Component {
       if (error) {
         console.error(error);
       } else {
-        let str = contact.phoneNumbers[0].digits;
-        str = str.replace("+91", "");
-        this.setState({ contactNo: str });
+        let mobNo = contact.phoneNumbers[0].digits;
+        let name = contact.displayName;
+        mobNo = mobNo.replace("+91", "");
+        this.setState({ cric_name: name, cric_contact: mobNo });
         this.addPlayerThroughContact();
       }
     });
   };
 
-  getPlayerImage = (imageIndex) => {
+  getPlayerImage(imageIndex) {
     ImagePicker.openPicker({
       width: 300,
       height: 400,
@@ -133,12 +147,9 @@ export default class NewPlayer extends Component {
       .catch((err) => {
         console.log("user cancelled image" + err.toString());
       });
-  };
+  }
 
   checkIfPlayerAlreadyExist = async (contact) => {
-    this.setState({
-      isLoading: true,
-    });
     var test = null;
     try {
       const qsnapshot = await firebase.firestore().collection("Player").get();
@@ -154,89 +165,73 @@ export default class NewPlayer extends Component {
     return test;
   };
 
-  save = async (index) => {
-    const channel = await this.checkIfPlayerAlreadyExist(
-      this.state.playerDetails[index].playerContactNumber
-    );
+  addToFlatList = (index) => {
     var newPlayer = this.state.playerInfo.concat(
       this.state.playerDetails[index]
     );
     this.setState({ playerInfo: newPlayer });
-    console.log("Player Info", this.state.playerInfo);
-    if (channel) {
-      console.log("Already Exist!!");
+  };
+
+  isValidate(index) {
+    var result = "empty";
+    if (!isStringValid(this.state.playerDetails[index].playerName)) {
+      this.setState({
+        visible: true,
+        message: "Please Enter Valid Player Name!!",
+      });
+      result = "something";
+    } else if (
+      !isMobileNumberValid(this.state.playerDetails[index].playerContactNumber)
+    ) {
+      this.setState({
+        visible: true,
+        message: "Please Enter Valid Mobile Number!!",
+      });
+      result = "anything";
     } else {
-      firebase
-        .firestore()
-        .collection("Player")
-        .doc()
-        .set({
-          Image: this.state.playerDetails[index].playerImage,
-          Name: this.state.playerDetails[index].playerName,
-          Contact: this.state.playerDetails[index].playerContactNumber,
-        })
-        .then(() => {
-          this.setState({
-            visible: true,
-            message: "Successfully Added New Player!!",
-          });
-        })
-        .catch((err) => {
-          console.error("Error found: ", err);
-        });
+      this.addToFlatList(index);
     }
-    this.handleDelete(index);
+    return result;
+  }
+
+  loadingButton = (id) => {
+    let load = [...this.state.loading];
+    load[id] = true;
+    this.setState({
+      loading: load,
+    });
+  };
+
+  save = async (index) => {
+    this.loadingButton(this.state.playerDetails[index].playerName);
+    if (this.isValidate(index) == "empty") {
+      const channel = await this.checkIfPlayerAlreadyExist(
+        this.state.playerDetails[index].playerContactNumber
+      );
+      if (channel) {
+        console.log("Player Already Exist!!");
+      } else {
+        firebase
+          .firestore()
+          .collection("Player")
+          .doc()
+          .set({
+            Image: this.state.playerDetails[index].playerImage,
+            Name: this.state.playerDetails[index].playerName,
+            Contact: this.state.playerDetails[index].playerContactNumber,
+          })
+          .then(() => {})
+          .catch((err) => {
+            console.error("Error found: ", err);
+          });
+      }
+      this.handleDelete(index);
+    } else {
+      console.log("Please correct your playername and contactnumber");
+    }
   };
 
   render() {
-    const renderItem = ({ item }) => {
-      return (
-        <TouchableOpacity
-          style={{
-            flex: 1,
-            padding: 7,
-            marginBottom: 10,
-            borderRadius: 12,
-            width: 300,
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "white",
-            elevation: 5,
-          }}
-        >
-          <Image
-            source={
-              item.playerImage == ""
-                ? this.state.imageSrc
-                : {
-                    uri: item.playerImage,
-                  }
-            }
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: 100,
-              marginRight: 20,
-            }}
-          />
-          <Text style={{ fontWeight: "bold", fontSize: 17, color: "black" }}>
-            {item.playerName}
-          </Text>
-          <Icon
-            name="close"
-            color="red"
-            size={23}
-            containerStyle={{
-              backgroundColor: "darkred",
-              position: "absolute",
-              right: 10,
-              borderRadius: 100,
-            }}
-            onPress={() => {}}
-          />
-        </TouchableOpacity>
-      );
-    };
     return (
       <ScrollView
         contentContainerStyle={{
@@ -306,14 +301,7 @@ export default class NewPlayer extends Component {
               {"  "} ADD AS A NEW PLAYER
             </Text>
           </TouchableOpacity>
-          <FlatList
-            data={this.state.playerInfo}
-            renderItem={renderItem}
-            keyExtractor={(item) => Math.random().toString()}
-            contentContainerStyle={{
-              padding: 20,
-            }}
-          />
+          <View style={styles.space} />
           {this.state.playerDetails.map((player, index) => (
             <View
               key={index}
@@ -369,8 +357,8 @@ export default class NewPlayer extends Component {
                       }}
                       onPress={() => this.handleDelete(index)}
                     />
-
                     <TextInput
+                      name="playername"
                       style={styles.inputStyleName}
                       placeholder="Player Full Name *"
                       value={player.playerName || ""}
@@ -379,12 +367,8 @@ export default class NewPlayer extends Component {
                     <View style={{ flexDirection: "row" }}>
                       <Text style={{ top: 7 }}> {"+91   "} </Text>
                       <TextInput
+                        name="contactnumber"
                         style={styles.inputStyleContact}
-                        editable={
-                          player.playerContactNumber || ""
-                            ? this.state.contactTextDisable
-                            : true
-                        }
                         keyboardType="numeric"
                         placeholder="Valid Mobile Number *"
                         value={player.playerContactNumber || ""}
@@ -397,13 +381,9 @@ export default class NewPlayer extends Component {
                 <Button
                   title="Add"
                   type="clear"
-                  loading={
-                    player.playerContactNumber == "" || player.playerName == ""
-                      ? false
-                      : this.state.isLoading
-                  }
+                  loading={this.state.loading[player.playerName] || false}
                   disabled={
-                    player.playerContactNumber == "" || player.playerName == ""
+                    player.playerName == "" || player.playerContactNumber == ""
                       ? true
                       : false
                   }
@@ -413,6 +393,76 @@ export default class NewPlayer extends Component {
               <View style={styles.space} />
             </View>
           ))}
+          {this.state.playerInfo.length > 0
+            ? this.state.playerInfo.map((item, ind) => {
+                return (
+                  <View key={ind}>
+                    <TouchableOpacity
+                      style={{
+                        padding: 7,
+                        marginBottom: 10,
+                        borderRadius: 12,
+                        width: 300,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: "white",
+                        elevation: 5,
+                      }}
+                    >
+                      <Image
+                        source={
+                          item.playerImage == ""
+                            ? this.state.imageSrc
+                            : {
+                                uri: item.playerImage,
+                              }
+                        }
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: 100,
+                          marginRight: 20,
+                        }}
+                      />
+                      <Text
+                        style={{
+                          fontWeight: "bold",
+                          fontSize: 17,
+                          color: "black",
+                        }}
+                      >
+                        {item.playerName}
+                      </Text>
+                      <Icon
+                        name="close"
+                        color="red"
+                        size={23}
+                        containerStyle={{
+                          backgroundColor: "darkred",
+                          position: "absolute",
+                          right: 10,
+                          borderRadius: 100,
+                        }}
+                        onPress={() => this.removePlayer(ind)}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
+            : null}
+          <View>
+            <TouchableOpacity style={styles.addbtn}>
+              <Text
+                style={{
+                  fontWeight: "bold",
+                  color: "white",
+                  textAlign: "center",
+                }}
+              >
+                ADD THEM IN TEAM
+              </Text>
+            </TouchableOpacity>
+          </View>
           {this.state.visible ? (
             <Snackbar
               visible={this.state.visible}
@@ -450,6 +500,12 @@ const styles = StyleSheet.create({
     padding: 10,
     flexDirection: "row",
   },
+  addbtn: {
+    height: 45,
+    backgroundColor: "navy",
+    padding: 10,
+    justifyContent: "center",
+  },
   space: {
     width: 20,
     height: 20,
@@ -482,15 +538,5 @@ const styles = StyleSheet.create({
     width: 280,
     justifyContent: "space-between",
     //backgroundColor: "orange",
-  },
-  preloader: {
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
   },
 });

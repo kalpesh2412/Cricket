@@ -14,14 +14,19 @@ export default class MyTeam extends Component {
       teamCityName: "",
       teamImage: "",
       myteams: [],
+      newarray:
+        this.props.route.params == undefined ? "" : this.props.route.params,
     };
   }
 
   componentDidMount() {
+    // this.props.route.params;
+    console.log("New Array", this.state.newarray);
+    // if (this.state.newarray != "") {
     this._isMounted = true;
     firebase
       .firestore()
-      .collection("users/" + this.state.uid + "/match/")
+      .collection("teamdata/3EPg32kwMDdmg6sOg6ck/first/")
       .get()
       .then((querySnapshot) => {
         querySnapshot.forEach((snapshot) => {
@@ -36,6 +41,7 @@ export default class MyTeam extends Component {
       .catch((error) => {
         console.log("Error getting document:", error);
       });
+    //}
   }
 
   componentWillUnmount() {
@@ -50,17 +56,19 @@ export default class MyTeam extends Component {
             key={i}
             bottomDivider
             containerStyle={{
-              padding: 15,
+              padding: 20,
               marginBottom: 15,
               backgroundColor: "white",
-              borderRadius: 12,
+              borderRadius: 15,
             }}
           >
             {l.TeamLogo == "" ? (
               <Avatar
                 rounded
                 size={50}
-                title="MD"
+                title={
+                  l.TeamName.charAt(0) + l.TeamName.charAt(1).toUpperCase()
+                }
                 containerStyle={{ backgroundColor: "black" }}
               />
             ) : (

@@ -52,7 +52,7 @@ export default class Login extends Component {
           });
           this.props.navigation.navigate("MyStack", { screen: "Home" });
         })
-        .catch((error) => this.setState({ errorMessage: error.message }));
+        .catch((error) => console.log(error));
     }
   };
 
